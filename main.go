@@ -75,6 +75,67 @@ func fetchAllTodo(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": _todos})
 }
 
+// fetchSigleTodo fetch a single todo
+func fetchSingleTodo(c *gin.Context) {
+	var todo todoModel
+	todoID := c.Param("id")
+
+	db.First(&todo, todoID)
+
+	if todo.ID == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound,
+			"message": "No todo found!"})
+		return
+	}
+
+	completed := false
+	if todo.Completed == 1 {
+		completed = true
+	} else {
+		completed = false
+	}
+
+	_todo := transformedTodo{ID: todo.ID, Title: todo.Title, Completed: completed}
+	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": _todo})
+}
+
+// updateTodo update a todo
+func updateTodo(c *gin.Context) {
+	var todo todoModel
+	todoID := c.Param("id")
+
+	db.First(&todo, todoID)
+
+	if todo.ID == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound,
+			"message": "No todo found!"})
+		return
+	}
+
+	db.Model(&todo).Update("title", c.PostForm("title"))
+	completed, _ := strconv.Atoi(c.PostForm("completed"))
+	db.Model(&todo).Update("completed", completed)
+	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Todo updated successfully!"})
+}
+
+// deleteTodo remove a todo
+func deleteTodo(c *gin.Context) {
+	var todo todoModel
+	todoID := c.Param("id")
+
+	db.First(&todo, todoID)
+
+	if todo.ID == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound,
+			"message": "No todo found!"})
+		return
+	}
+
+	db.Delete(&todo)
+	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK,
+		"message": "Todo deleted successfully!"})
+}
+
 func main() {
 
 	router := gin.Default() // similar to app = express();
@@ -87,5 +148,5 @@ func main() {
 		v1.PUT("/:id", updateTodo)
 		v1.DELETE("/:id", deleteTodo)
 	}
-	router.Run
+	router.Run()
 }
